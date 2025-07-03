@@ -214,5 +214,7 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(config.serverPort);
+httpServer.listen(config.serverPort, () => {
+  logger.info("Server started");
+});
 // WARNING !!! app.listen(3000); will not work here, as it creates a new HTTP server

@@ -14,12 +14,12 @@ interface Config{
 
 const config : Config = {
     serverPort : Number(process.env.PORT) || 8080,
-    nodeEnv: process.env.nodeEnv || 'development',
-    pgHost: process.env.pgHost || 'localhost',
-    pgPort: Number(process.env.pgPort) || 5432,
-    pgDatabase: process.env.pgDatabase || 'speedy_poker',
-    pgUser: process.env.pgUserName || '',
-    pgPassword: process.env.pgPassword || '',
+    nodeEnv: process.env.NODE_ENV || 'development',
+    pgHost: process.env.PG_HOST || 'localhost',
+    pgPort: Number(process.env.PG_PORT) || 5432,
+    pgDatabase: process.env.PG_DATABASE || 'speedy_poker',
+    pgUser: process.env.PG_USER || '',
+    pgPassword: process.env.PG_PASSWORD || '',
 }
 
 export default config;
