@@ -1,9 +1,10 @@
 import { Player } from "@/model/player";
 import { Card } from "@/types/constant";
+import { PlayerId } from "@/types/enums";
 
 export interface ClientToServerEvents{
     "game:get": (gameID: number) => void;
-    "game:move": (card: Card, gameID: number, player: Player) => void;
+    "game:move": (card: Card, gameID: number, playerId: PlayerId) => void;
     "user:join": (gameID: number, playerName: string) => void;
     "game:create": (playerName: string) => void;
     "user:join_any" : (playerName: string) => void;

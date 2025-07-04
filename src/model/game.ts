@@ -3,11 +3,11 @@ import { Destination, FaceValue, PlayerId, Validality } from "@/types/enums";
 import { Player } from "./player";
 import { createDeck, dealCards, getFaceValue, shuffle } from "@/utils/card";
 import { GameState } from "@/types/response_types/updated_game_response";
+import { logger } from "@/types/constant";
 
 export class Game {
   gameID: number;
-  player1: Player = new Player([], [], 1);
-  player2: Player = new Player([], [], 2);
+  players: Player[] = [];
   centerPile1: Pile = [];
   centerPile2: Pile = [];
   centerDrawPile1: Pile = [];
@@ -16,25 +16,17 @@ export class Game {
   numberOfPlayers: number = 0;
 
   constructor(gameID: number) {
-    while (this.checkIsDead()) {
-      let player1: Player;
-      let player2: Player;
-
-      let deck: Deck = createDeck();
-      player1 = new Player(dealCards(deck, 4), dealCards(deck, 16), 1);
-      player2 = new Player(dealCards(deck, 4), dealCards(deck, 16), 2);
-      this.player1 = player1;
-      this.player2 = player2;
-      this.centerPile1 = dealCards(deck, 1);
-      this.centerPile2 = dealCards(deck, 1);
-      this.centerDrawPile1 = dealCards(deck, 5);
-      this.centerDrawPile2 = dealCards(deck, 5);
-    }
-
     this.gameID = gameID;
   }
 
-  useCard(card: Card, player: Player): GameState | undefined {
+  useCard(card: Card, playerId: PlayerId): GameState | undefined {
+    if (this.numberOfPlayers != 2) {
+      // can not activate function when player is less than 2
+      return;
+    }
+    let playerIndex = playerId - 1;
+    let player = this.players[playerIndex];
+
     let index: number = player.hand.indexOf(card);
     let targetCard: Card = player.hand[index];
     let destination: Destination = Destination.CenterPile2;
@@ -43,23 +35,12 @@ export class Game {
       this.centerPile2[0],
       targetCard
     );
-    let gamePlayer: Player = new Player([], [], PlayerId.Default);
-    // find the game player
-    if (player.playerID === PlayerId.Player1) {
-      gamePlayer = this.player1;
-    } else if (player.playerID === PlayerId.Player2) {
-      gamePlayer = this.player2;
-    }
-
-    if (gamePlayer.playerID === PlayerId.Default) {
-      return;
-    }
 
     // find if the card can be used in this environment
     if (result == Validality.CENTER1VALID) {
       destination = Destination.CenterPile1;
     } else if (result == Validality.INVALID) {
-      if (gamePlayer.point > 0) gamePlayer.point -= 0.5;
+      if (player.point > 0) player.point -= 0.5;
       return {
         game: this,
         playerTurn: PlayerId.Default,
@@ -78,11 +59,11 @@ export class Game {
       copy = [...player.hand.slice(0, index), ...player.hand.slice(index + 1)];
     }
 
-    gamePlayer.hand = copy;
-    gamePlayer.drawPile =
+    player.hand = copy;
+    player.drawPile =
       player.drawPile.length > 0 ? player.drawPile.slice(1) : player.drawPile;
-    if (gamePlayer.hand.length == 0) {
-      gamePlayer.point += 5;
+    if (player.hand.length == 0) {
+      player.point += 5;
     }
 
     // place the card in the desination pile
@@ -91,13 +72,13 @@ export class Game {
     } else {
       this.centerPile2 = [targetCard, ...this.centerPile2];
     }
-    gamePlayer.point += 1;
+    player.point += 1;
     this.discardedPile.push(targetCard);
     this.shuffleUntilNotDead();
 
     return {
       game: this,
-      playerTurn: gamePlayer.playerID,
+      playerTurn: player.playerId,
       cardIndex: index,
       destination: destination,
       newCard: player.drawPile.length > 0 ? newCard : -1,
@@ -116,7 +97,7 @@ export class Game {
         let combinedCenterPile = [...this.centerPile1, ...this.centerPile2];
 
         if (combinedCenterPile.length === 0) {
-          console.warn("No cards left to reshuffle. Game might be stuck!");
+          logger.info("No cards left to reshuffle. Game might be stuck!");
           return; // Prevent infinite loop
         }
 
@@ -141,23 +122,36 @@ export class Game {
     }
   }
 
-  playerJoin(playerName: string, socketID: string) {
-    if (!this.player1.socketID) {
-      this.player1.socketID = socketID;
-      this.player1.name = playerName;
-      this.numberOfPlayers += 1;
-    } else if (!this.player2.socketID && this.player1.socketID !== socketID) {
-      this.player2.socketID = socketID;
-      this.player2.name = playerName;
-      this.numberOfPlayers += 1;
+  playerJoin(playerName: string, socketId: string) {
+    if (this.numberOfPlayers >= 2) {
+      return; // can not join any more players
+    }
+    this.numberOfPlayers += 1;
+    let playerId = this.numberOfPlayers;
+    let player = new Player(playerName, socketId, [], [], playerId);
+    this.players.push(player);
+
+    if (this.numberOfPlayers == 2) {
+      // we have two players start distributing cards
+      while (this.checkIsDead()) {
+        let deck = createDeck();
+        for(const p of this.players){
+          p.setHand(dealCards(deck, 4));
+          p.setDrawPile(dealCards(deck, 16));
+        }
+        this.centerPile1 = dealCards(deck, 1);
+        this.centerPile2 = dealCards(deck, 1);
+        this.centerDrawPile1 = dealCards(deck, 5);
+        this.centerDrawPile2 = dealCards(deck, 5);
+      }
     }
   }
 
   checkIsDead(): boolean {
     const players =
       Math.random() < 0.5
-        ? [this.player1, this.player2]
-        : [this.player2, this.player1]; // Randomize order
+        ? [this.players[0], this.players[1]]
+        : [this.players[1], this.players[0]]; // Randomize order
 
     for (const player of players) {
       for (const c of player.hand) {
@@ -216,21 +210,28 @@ export class Game {
     return Validality.INVALID;
   }
 
-  winner(): Player[]{
+  winner(): Player[] {
     // return player array [], index 0 is winner, index 1 is loser
-    if(this.player1.hand.length != 0 && this.player2.hand.length != 0){
+    if (this.players[0].hand.length != 0 && this.players[1].hand.length != 0) {
       return [];
-    }else{
-      let player1Point = this.player1.point;
-      let player2Point = this.player2.point;
+    } else {
+      let player1 = this.players[0];
+      let player2 = this.players[1];
+
+      let player1Point = player1.point;
+      let player2Point = player2.point;
 
       // when both player have same points, whoever finishes first wins
-      if(this.player1.hand.length == 0){
+      if (player1.hand.length == 0) {
         // player 1 finished first
-        return player1Point - player2Point >= 0 ? [this.player1, this.player2] : [this.player2, this.player1];
-      }else{
+        return player1Point - player2Point >= 0
+          ? [player1, player2]
+          : [player2, player1];
+      } else {
         // player 2 finished first
-        return player2Point - player1Point >= 0 ? [this.player2, this.player1] : [this.player1, this.player2];
+        return player2Point - player1Point >= 0
+          ? [player2, player1]
+          : [player1, player2];
       }
     }
   }

@@ -4,21 +4,30 @@ import { PlayerId } from "@/types/enums";
 export class Player {
   hand: Cards = [];
   drawPile: Pile = [];
-  playerID: PlayerId = PlayerId.Default;
-  socketID: string;
+  playerId: PlayerId = PlayerId.Default;
+  socketId: string;
   name: string;
   point: number;
 
-  constructor(hand: Cards, drawPile: Pile, playerID: PlayerId) {
+  constructor(
+    name: string,
+    socketId: string,
+    hand: Cards,
+    drawPile: Pile,
+    playerId: PlayerId
+  ) {
     this.hand = hand;
     this.drawPile = drawPile;
-    this.playerID = playerID;
-    this.name = "";
-    this.socketID = "";
+    this.playerId = playerId;
+    this.name = name;
+    this.socketId = socketId;
     this.point = 0.0;
   }
 
-  setName(name: string) {
-    this.name = name;
+  setHand(hand: Cards) {
+    this.hand = hand;
+  }
+  setDrawPile(drawPile: Cards) {
+    this.drawPile = drawPile;
   }
 }

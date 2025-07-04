@@ -8,10 +8,8 @@ import { PlayerId } from "./types/enums";
 import { ClientToServerEvents } from "@/types/socket/client_to_server_events";
 import { ServerToClientEvents } from "@/types/socket/server_to_client_events";
 import { Card } from "@/types/constant";
-import { Player } from "@/model/player";
-import { pino } from "pino";
+import { logger } from "@/types/constant";
 
-const logger = pino();
 const app = express();
 const httpServer = http.createServer(app);
 const options = {
@@ -47,8 +45,8 @@ io.on("connection", (socket) => {
     socket.emit("game:update", res);
   });
 
-  socket.on("game:move", (card: Card, gameID: number, player: Player) => {
-    logger.debug({ card, gameID, player }, "game:move");
+  socket.on("game:move", (card: Card, gameID: number, playerId: PlayerId) => {
+    logger.debug({ card, gameID, playerId }, "game:move");
     let game = games.get(gameID);
     if (!game) {
       logger.error("Game does not exist");
@@ -56,7 +54,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let updatedGame = game.useCard(card, player);
+    let updatedGame = game.useCard(card, playerId);
 
     // if (game.player1.hand.length == 0 || game.player2.hand.length == 0) {
     //   if (game.player2.point > game.player1.point) {
@@ -97,12 +95,12 @@ io.on("connection", (socket) => {
 
     let [winner, loser] = game.winner();
     if (winner != undefined && loser != undefined) {
-      io.to(winner.socketID).emit(
+      io.to(winner.socketId).emit(
         "game:result",
         winner.name + " Won the Game!"
       );
 
-      io.to(loser.socketID).emit("game:result", loser.name + " Lose the Game!");
+      io.to(loser.socketId).emit("game:result", loser.name + " Lose the Game!");
     }
 
     io.sockets.in(String(gameID)).emit("game:update", updatedGame);
@@ -130,8 +128,9 @@ io.on("connection", (socket) => {
     game.playerJoin(playerName, socket.id);
 
     logger.info(`Player Joined;Room ID: ${roomIDString}`);
-    logger.info(`Player Joined;Player1 ID: ${game.player1.socketID}`);
-    logger.info(`Player Joined;Player2 ID: ${game.player2.socketID}`);
+    for (const player of game.players) {
+      logger.info(`Player Joined;Player ID: ${player.socketId}`);
+    }
 
     socket.join(roomIDString);
     socket.emit("user:joined", roomIDString);
@@ -158,9 +157,9 @@ io.on("connection", (socket) => {
     game.playerJoin(playerName, socket.id);
 
     logger.info(`Game Create;Room ID: ${roomIDString}`);
-    logger.info(`Game Create;Player1 ID: ${game.player1.socketID}`);
-    logger.info(`Game Create;Player2 ID: ${game.player2.socketID}`);
-
+    for (const player of game.players) {
+      logger.info(`Game Created;Player ID: ${player.socketId}`);
+    }
     socket.join(roomIDString);
     socket.emit("user:joined", roomIDString);
   });
@@ -179,8 +178,9 @@ io.on("connection", (socket) => {
       game.playerJoin(playerName, socket.id);
 
       logger.info(`Player Joined;Room ID: ${game.gameID}`);
-      logger.info(`Player Joined;Player1 ID: ${game.player1.socketID}`);
-      logger.info(`Player Joined;Player2 ID: ${game.player2.socketID}`);
+      for (const player of game.players) {
+        logger.info(`Player Joined;Player ID: ${player.socketId}`);
+      }
       socket.join(String(game.gameID));
       socket.emit("user:joined", String(game.gameID));
     }
@@ -205,12 +205,17 @@ io.on("connection", (socket) => {
       logger.info("Did not find existing game when user exited");
       return;
     }
-    socketToGame.delete(game.player1.socketID!);
-    socketToGame.delete(game.player2.socketID!);
+
+    for (const player of game.players) {
+      socketToGame.delete(player.socketId!);
+    }
+
     games.delete(game.gameID);
     io.in(String(game.gameID)).socketsLeave(String(game.gameID));
-    io.to(game.player1.socketID!).emit("game:disconnect", "An user have left");
-    io.to(game.player2.socketID!).emit("game:disconnect", "An user have left");
+
+    for (const player of game.players) {
+      io.to(player.socketId!).emit("game:disconnect", "An user have left");
+    }
   });
 });
 
