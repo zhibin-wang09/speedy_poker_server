@@ -6,7 +6,7 @@
   "scripts": {
     "test": "vitest",
     "start": "tsx --env-file=.env ./src/server.ts",
-    "dev": "tsx --env-file=.env watch --include ./src ./src/server.ts"
+    "dev": "tsx watch --include ./src --env-file=.env ./src/server.ts"
   },
   "keywords": [],
   "author": "",

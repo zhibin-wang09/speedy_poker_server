@@ -56,43 +56,6 @@ io.on("connection", (socket) => {
 
     let updatedGame = game.useCard(card, playerId);
 
-    // if (game.player1.hand.length == 0 || game.player2.hand.length == 0) {
-    //   if (game.player2.point > game.player1.point) {
-    //     io.to(game.player2.socketID).emit(
-    //       "game:result",
-    //       game.player2.name + ` Lose the Game!`
-    //     );
-    //     io.to(game.player1.socketID).emit(
-    //       "game:result",
-    //       game.player1.name + " Won the Game!"
-    //     );
-    //     socketToGame.delete(game.player1.socketID!);
-    //     socketToGame.delete(game.player2.socketID!);
-    //     games.delete(game.gameID);
-    //     io.in(String(game.gameID)).socketsLeave(String(game.gameID));
-    //   } else if (game.player1.point > game.player2.point) {
-    //     io.to(game.player1.socketID).emit(
-    //       "game:result",
-    //       game.player1.name + " Lose the Game!"
-    //     );
-    //     io.to(game.player2.socketID).emit(
-    //       "game:result",
-    //       game.player2.name + " Won the Game!"
-    //     );
-    //     socketToGame.delete(game.player1.socketID!);
-    //     socketToGame.delete(game.player2.socketID!);
-    //     games.delete(game.gameID);
-    //     io.in(String(game.gameID)).socketsLeave(String(game.gameID));
-    //   } else {
-    //     io.to(game.player1.socketID).emit("game:result", "Tie game");
-    //     io.to(game.player2.socketID).emit("game:result", "Tie game");
-    //     socketToGame.delete(game.player1.socketID!);
-    //     socketToGame.delete(game.player2.socketID!);
-    //     games.delete(game.gameID);
-    //   }
-    // }
-    //console.log(res);
-
     let result = game.winner();
     if (result != undefined) {
       io.to(result.winner.socketId).emit(
