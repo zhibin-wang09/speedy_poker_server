@@ -1,8 +1,15 @@
 import { describe, it, expect, vi } from "vitest";
 import { faker } from "@faker-js/faker";
 import { Game } from "@/model/game";
-import { Destination, PlayerId, Validality } from "@/types/enums";
+import {
+  Destination,
+  FaceValue,
+  PlayerId,
+  Suit,
+  Validality,
+} from "@/types/enums";
 import { GameState } from "@/types/response_types/updated_game_response";
+import { createCard } from "@/utils/card";
 
 describe("Game behvaiors", () => {
   it("Game constructor: initialized with proper properties", () => {
@@ -183,9 +190,165 @@ describe("Game behvaiors", () => {
 
   it("Game isDead: identify a alive game", () => {});
 
-  it("Game validateMove: identify a valid move and the exact location", () => {});
+  it("Game winner: identify winner and loser base on number of cards in hand", () => {
+    let game: Game = new Game(faker.number.int(100));
+    let player1Name = faker.string.sample(5);
+    let player2Name = faker.string.sample(5);
 
-  it("Game validateMove: identify a invalid move", () => {});
+    game.playerJoin(player1Name, faker.string.fromCharacters("abc", 10));
+    game.playerJoin(player2Name, faker.string.fromCharacters("abc", 10));
 
-  it("Game winner: identify winner and loser");
+    let player1 = game.players[0];
+    let player2 = game.players[1];
+
+    player1.hand = [];
+
+    let result = game.winner();
+    expect(result).not.toBe(undefined);
+    expect(result!.winner).toEqual(player1);
+    expect(result!.loser).toEqual(player2);
+  });
+
+  it("Game winner: identify winner and loser base on points", () => {
+    let game: Game = new Game(faker.number.int(100));
+    let player1Name = faker.string.sample(5);
+    let player2Name = faker.string.sample(5);
+
+    game.playerJoin(player1Name, faker.string.fromCharacters("abc", 10));
+    expect(game.numberOfPlayers).toBe(1);
+
+    game.playerJoin(player2Name, faker.string.fromCharacters("abc", 10));
+    expect(game.numberOfPlayers).toBe(2);
+
+    let player1 = game.players[0];
+    let player2 = game.players[1];
+
+    player1.hand = [];
+    player2.point = 100;
+
+    let result = game.winner();
+
+    expect(result).not.toBe(undefined);
+    expect(result!.winner).toEqual(player2);
+    expect(result!.loser).toEqual(player1);
+  });
+
+  it("Game winner: does not have a winnner yet", () => {
+    let game: Game = new Game(faker.number.int(100));
+    let player1Name = faker.string.sample(5);
+    let player2Name = faker.string.sample(5);
+
+    game.playerJoin(player1Name, faker.string.fromCharacters("abc", 10));
+    expect(game.numberOfPlayers).toBe(1);
+
+    game.playerJoin(player2Name, faker.string.fromCharacters("abc", 10));
+    expect(game.numberOfPlayers).toBe(2);
+
+    let player1 = game.players[0];
+    let player2 = game.players[1];
+
+    let result = game.winner();
+
+    expect(result).toBe(undefined);
+  });
+});
+
+describe("Card value validations", () => {
+  const invalidTestCases = [
+    {
+      input: [FaceValue.Ace, FaceValue.Three],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Five, FaceValue.Three],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Five, FaceValue.Seven],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Seven, FaceValue.Nine],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Nine, FaceValue.Jack],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Jack, FaceValue.King],
+      expected: Validality.INVALID,
+    },
+    {
+      input: [FaceValue.Two, FaceValue.Four],
+      expected: Validality.INVALID,
+    },
+  ];
+
+  const validTestCases = [
+    {
+      input: [FaceValue.Ace, FaceValue.Two],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Ace, FaceValue.King],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Jack, FaceValue.Queen],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Five, FaceValue.Six],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Two, FaceValue.Three],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Four, FaceValue.Five],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+    {
+      input: [FaceValue.Ten, FaceValue.Jack],
+      expected: [Validality.CENTER1VALID, Validality.CENTER2VALID],
+    },
+  ];
+
+  it.each(validTestCases)(
+    "Card validateMove: should validate valid card usage",
+    ({ input, expected }) => {
+      let game: Game = new Game(faker.number.int(100));
+      let player1Name = faker.string.sample(5);
+      let player2Name = faker.string.sample(5);
+
+      game.playerJoin(player1Name, faker.string.fromCharacters("abc", 10));
+      game.playerJoin(player2Name, faker.string.fromCharacters("abc", 10));
+      let validality = game.validateMove(
+        createCard(Suit.Clubs, input[0]),
+        createCard(Suit.Clubs, input[0]),
+        createCard(Suit.Clubs, input[1])
+      );
+      expect(expected).toContain(validality);
+    }
+  );
+
+  it.each(invalidTestCases)(
+    "Card validateMove: should invalidate any invalid card usage",
+    ({ input, expected }) => {
+      let game: Game = new Game(faker.number.int(100));
+      let player1Name = faker.string.sample(5);
+      let player2Name = faker.string.sample(5);
+
+      game.playerJoin(player1Name, faker.string.fromCharacters("abc", 10));
+      game.playerJoin(player2Name, faker.string.fromCharacters("abc", 10));
+      let validality = game.validateMove(
+        createCard(Suit.Clubs, input[0]),
+        createCard(Suit.Clubs, input[0]),
+        createCard(Suit.Clubs, input[1])
+      );
+      expect(validality).toBe(expected);
+    }
+  );
 });

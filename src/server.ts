@@ -93,14 +93,14 @@ io.on("connection", (socket) => {
     // }
     //console.log(res);
 
-    let [winner, loser] = game.winner();
-    if (winner != undefined && loser != undefined) {
-      io.to(winner.socketId).emit(
+    let result = game.winner();
+    if (result != undefined) {
+      io.to(result.winner.socketId).emit(
         "game:result",
-        winner.name + " Won the Game!"
+        result.winner.name + " Won the Game!"
       );
 
-      io.to(loser.socketId).emit("game:result", loser.name + " Lose the Game!");
+      io.to(result.loser.socketId).emit("game:result", result.loser.name + " Lose the Game!");
     }
 
     io.sockets.in(String(gameID)).emit("game:update", updatedGame);

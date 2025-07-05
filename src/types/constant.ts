@@ -1,3 +1,4 @@
+import { Player } from "@/model/player";
 import { pino } from "pino";
 
 export const CARD_HOLDER = -1;
@@ -15,3 +16,7 @@ export type pileAndHand = {
   hand: Cards;
 };
 
+export interface WinnerAndLoser{
+  winner: Player;
+  loser: Player;
+}

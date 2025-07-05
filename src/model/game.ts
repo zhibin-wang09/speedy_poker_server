@@ -1,4 +1,11 @@
-import { Card, CARD_HOLDER, Cards, Deck, Pile } from "@/types/constant";
+import {
+  Card,
+  CARD_HOLDER,
+  Cards,
+  Deck,
+  Pile,
+  WinnerAndLoser,
+} from "@/types/constant";
 import { Destination, FaceValue, PlayerId, Validality } from "@/types/enums";
 import { Player } from "./player";
 import { createDeck, dealCards, getFaceValue, shuffle } from "@/utils/card";
@@ -135,7 +142,7 @@ export class Game {
       // we have two players start distributing cards
       while (this.checkIsDead()) {
         let deck = createDeck();
-        for(const p of this.players){
+        for (const p of this.players) {
           p.setHand(dealCards(deck, 4));
           p.setDrawPile(dealCards(deck, 16));
         }
@@ -210,10 +217,10 @@ export class Game {
     return Validality.INVALID;
   }
 
-  winner(): Player[] {
+  winner(): WinnerAndLoser | undefined {
     // return player array [], index 0 is winner, index 1 is loser
     if (this.players[0].hand.length != 0 && this.players[1].hand.length != 0) {
-      return [];
+      return;
     } else {
       let player1 = this.players[0];
       let player2 = this.players[1];
@@ -225,13 +232,25 @@ export class Game {
       if (player1.hand.length == 0) {
         // player 1 finished first
         return player1Point - player2Point >= 0
-          ? [player1, player2]
-          : [player2, player1];
+          ? {
+              winner: player1,
+              loser: player2,
+            }
+          : {
+              winner: player2,
+              loser: player1,
+            };
       } else {
         // player 2 finished first
         return player2Point - player1Point >= 0
-          ? [player2, player1]
-          : [player1, player2];
+          ? {
+              winner: player2,
+              loser: player1,
+            }
+          : {
+              winner: player1,
+              loser: player2,
+            };
       }
     }
   }
