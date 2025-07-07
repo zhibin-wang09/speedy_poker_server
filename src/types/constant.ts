@@ -1,3 +1,5 @@
+import config from "@/config/config";
+import { Game } from "@/model/game";
 import { Player } from "@/model/player";
 import { pino } from "pino";
 
@@ -9,7 +11,8 @@ export type Deck = Cards;
 export type Pile = Cards;
 
 
-export const logger = pino();
+const stream = pino.destination({dest: config.log_destination_path})
+export const logger = pino(stream);
 
 export type pileAndHand = {
   pile: Pile;
@@ -20,3 +23,6 @@ export interface WinnerAndLoser{
   winner: Player;
   loser: Player;
 }
+
+export const games = new Map<number, Game>();
+export const socketToGame = new Map<string, Game>();
