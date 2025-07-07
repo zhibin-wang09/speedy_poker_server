@@ -10,6 +10,7 @@ interface Config{
     pgDatabase: string;
     pgUser: string;
     pgPassword: string;
+    log_destination_path: string;
 }
 
 const config : Config = {
@@ -20,6 +21,7 @@ const config : Config = {
     pgDatabase: process.env.PG_DATABASE || 'speedy_poker',
     pgUser: process.env.PG_USER || '',
     pgPassword: process.env.PG_PASSWORD || '',
+    log_destination_path: process.env.LOG_DESTINATION_PATH || 'src/server.log',
 }
 
 export default config;
