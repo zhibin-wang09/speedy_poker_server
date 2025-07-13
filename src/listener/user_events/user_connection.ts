@@ -97,6 +97,7 @@ function userCreate(
   >
 ): (playerName: string) => void {
   return (playerName: string) => {
+    logger.debug("hi")
     // generate a random game room ID and send back to the user
     // and player can wait for another user to join
     const roomIDString: string = String(

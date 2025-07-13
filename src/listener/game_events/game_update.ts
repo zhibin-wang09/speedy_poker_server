@@ -44,10 +44,14 @@ function gameMove(
     DefaultEventsMap,
     any
   >
-): (card: Card, gameID: number, playerId: PlayerId) => void {
-  return (card: Card, gameID: number, playerId: PlayerId) => {
-    logger.debug({ card, gameID, playerId }, "game:move");
-    let game = games.get(gameID);
+): (moveInfo : {card: Card, gameId: number, playerId: PlayerId}) => void {
+  return (moveInfo : {card: Card, gameId: number, playerId: PlayerId}) => {
+    let card = moveInfo.card;
+    let gameId = moveInfo.gameId;
+    let playerId = moveInfo.playerId;
+
+    logger.debug({ card, gameId, playerId }, "game:move");
+    let game = games.get(gameId);
     if (!game) {
       logger.error("Game does not exist!");
       socket.emit("game:error", "Game does not exist!");
@@ -69,7 +73,7 @@ function gameMove(
       );
     }
 
-    io.sockets.in(String(gameID)).emit("game:update", updatedGame);
+    io.sockets.in(String(gameId)).emit("game:update", updatedGame);
   };
 }
 

@@ -4,7 +4,7 @@ import { PlayerId } from "@/types/enums";
 
 export interface ClientToServerEvents{
     "game:get": (gameID: number) => void;
-    "game:move": (card: Card, gameID: number, playerId: PlayerId) => void;
+    "game:move": (moveInfo : {card: Card, gameId: number, playerId: PlayerId}) => void;
     "user:join": (gameID: number, playerName: string) => void;
     "game:create": (playerName: string) => void;
     "user:join_any" : (playerName: string) => void;
