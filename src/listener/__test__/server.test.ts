@@ -180,4 +180,11 @@ describe("Server behaviors", () => {
     let response: string = await waitFor<string>(clientSocket1, "game:error");
     expect(response).toBe("Game does not exist!");
   });
+
+  it("Game Move failed because game does not exist", async () => {
+    clientSocket1.emit("game:move", faker.number.int(10), faker.number.int(100), PlayerId.Player1);
+    
+    let response: string = await waitFor<string>(clientSocket1, "game:error");
+    expect(response).toBe("Game does not exist!");
+  })
 });

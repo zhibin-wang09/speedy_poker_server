@@ -49,7 +49,7 @@ function gameMove(
     logger.debug({ card, gameID, playerId }, "game:move");
     let game = games.get(gameID);
     if (!game) {
-      logger.error("Game does not exist");
+      logger.error("Game does not exist!");
       socket.emit("game:error", "Game does not exist!");
       return;
     }
