@@ -10,16 +10,15 @@ export type Cards = Card[];
 export type Deck = Cards;
 export type Pile = Cards;
 
-
-const stream = pino.destination({dest: config.log_destination_path})
-export const logger = pino(stream);
+const stream = pino.destination({ dest: config.log_destination_path });
+export const logger = config.nodeEnv == "dev" ? pino() : pino(stream);
 
 export type pileAndHand = {
   pile: Pile;
   hand: Cards;
 };
 
-export interface WinnerAndLoser{
+export interface WinnerAndLoser {
   winner: Player;
   loser: Player;
 }
