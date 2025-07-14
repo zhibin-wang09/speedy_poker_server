@@ -24,7 +24,10 @@ function userJoin(
     let game = games.get(gameID);
 
     if (!game) {
-      socket.emit("game:error", "Game does not exist, create a a game room instead");
+      socket.emit(
+        "game:error",
+        "Game does not exist, create a a game room instead"
+      );
       return;
     }
 
@@ -50,35 +53,46 @@ function userJoinAny(
   >
 ): (playerName: string) => void {
   return (playerName: string) => {
-      let game;
-      for (let [_, g] of games) {
-        if (g.numberOfPlayers < 2) {
-          game = g;
-        }
+    let game;
+    for (let [_, g] of games) {
+      if (g.numberOfPlayers < 2) {
+        game = g;
       }
+    }
 
-      if (game == undefined) {
-        socket.emit("game:error", "No active games!");
-      } else {
-        game.playerJoin(playerName, socket.id);
+    if (game == undefined) {
+      socket.emit("game:error", "No active games!");
+      return;
+    } else {
+      game.playerJoin(playerName, socket.id);
 
-        logger.info(`Player Joined;Room ID: ${game.gameID}`);
-        for (const player of game.players) {
-          logger.info(`Player Joined;Player ID: ${player.socketId}`);
-        }
-        socket.join(String(game.gameID));
-        socket.emit("user:joined", String(game.gameID));
+      logger.info(`Player Joined;Room ID: ${game.gameID}`);
+      for (const player of game.players) {
+        logger.info(`Player Joined;Player ID: ${player.socketId}`);
       }
-    };
-
+      socket.join(String(game.gameID));
+      socket.emit("user:joined", String(game.gameID));
+    }
+  };
 }
 
 function userReady(
-  io: Server<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, any>
+  io: Server<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, any>,
+  socket: Socket<
+    ClientToServerEvents,
+    ServerToClientEvents,
+    DefaultEventsMap,
+    any
+  >
 ): (gameId: number) => void {
   return (gameID: number) => {
     // Wait for 2 players to start the game
     const room = io.sockets.adapter.rooms.get(String(gameID));
+
+    let game = games.get(gameID);
+
+    // Ensure the game object is correctly associated with the socket
+    socketToGame.set(socket.id, game!);
 
     logger.info(`Player ready for: ${gameID}, room size: ${room?.size}`);
     if (room?.size === 2) {
@@ -97,7 +111,7 @@ function userCreate(
   >
 ): (playerName: string) => void {
   return (playerName: string) => {
-    logger.debug("hi")
+
     // generate a random game room ID and send back to the user
     // and player can wait for another user to join
     const roomIDString: string = String(
@@ -110,9 +124,6 @@ function userCreate(
       game = new Game(gameID);
       games.set(gameID, game); // Save the game immediately after initialization
     }
-
-    // Ensure the game object is correctly associated with the socket
-    socketToGame.set(socket.id, game);
 
     // Set up the player socketID properly
     game.playerJoin(playerName, socket.id);
@@ -140,7 +151,7 @@ export function disconnect(
 
     const game = socketToGame.get(socket.id);
     if (!game) {
-      logger.info("Did not find existing game when user exited");
+      logger.error("Did not find existing game when user exited");
       return;
     }
 
@@ -161,9 +172,9 @@ export default function userEvents(io: Server, socket: Socket) {
   const socketsEvents: Record<string, (...args: any[]) => void> = {
     "user:join": userJoin(io, socket),
     "user:join_any": userJoinAny(socket),
-    "user:ready": userReady(io),
+    "user:ready": userReady(io, socket),
     "user:create": userCreate(socket),
-    'disconnect': disconnect(io, socket),
+    disconnect: disconnect(io, socket),
   };
 
   for (const event in socketsEvents) {
