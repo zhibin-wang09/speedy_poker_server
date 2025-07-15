@@ -1,7 +1,5 @@
 import { Game } from "@/model/game";
-import { Card, games, logger, socketToGame } from "@/types/constant";
-import { PlayerId } from "@/types/enums";
-import { GameState } from "@/types/response_types/updated_game_response";
+import { games, logger, socketToGame } from "@/types/constant";
 import { ClientToServerEvents } from "@/types/socket/client_to_server_events";
 import { ServerToClientEvents } from "@/types/socket/server_to_client_events";
 import { DefaultEventsMap, Server, Socket } from "socket.io";
@@ -26,7 +24,7 @@ function userJoin(
     if (!game) {
       socket.emit(
         "game:error",
-        "Game does not exist, create a a game room instead"
+        "Game does not exist, create a game room instead"
       );
       return;
     }
@@ -165,6 +163,7 @@ export function disconnect(
     for (const player of game.players) {
       io.to(player.socketId!).emit("game:disconnect", "An user have left");
     }
+    logger.info(`Game ${game.gameID} deleted`);
   };
 }
 
