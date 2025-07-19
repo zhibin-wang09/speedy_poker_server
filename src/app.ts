@@ -9,7 +9,7 @@ import { ClientToServerEvents } from "@/types/socket/client_to_server_events";
 import { ServerToClientEvents } from "@/types/socket/server_to_client_events";
 import { Card, games, socketToGame } from "@/types/constant";
 import { logger } from "@/types/constant";
-import initIo from '@/listener/server';
+import initIo from "@/listener/server";
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -17,10 +17,8 @@ const options = {
   /* ... */
 };
 
-
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer);
 initIo(io);
-
 
 httpServer.listen(config.serverPort, () => {
   logger.info("Server started");
